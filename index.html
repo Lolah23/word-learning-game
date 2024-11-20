@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Learning Game</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Word Learning Game</h1>
+    <button id="startGameBtn">Start Game</button>
+  </header>
+
+  <main>
+    <section id="categorySection" class="hidden">
+      <label for="categories">Choose a word category:</label>
+      <select id="categories">
+        <option value="animals">Animals</option>
+        <option value="colors">Colors</option>
+        <option value="fruits">Fruits</option>
+      </select>
+      <button id="chooseCategoryBtn">Start Learning</button>
+    </section>
+
+    <section id="gameSection" class="hidden">
+      <h2 id="question"></h2>
+      <div id="choices"></div>
+      <p id="feedback"></p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
