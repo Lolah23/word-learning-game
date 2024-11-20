@@ -16,3 +16,8 @@ jobs:
         run: echo "Building site..."
       - name: Deploy
         uses: actions/deploy-pages@v1
+
+permissions:
+  contents: write
+  pages: write
+
