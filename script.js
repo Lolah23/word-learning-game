@@ -45,7 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function checkAnswer(category) {
+  // Expose checkAnswer globally for testing
+  window.checkAnswer = function(category) {
     if (category === selectedCategory) {
       feedbackEl.textContent = "Correct!";
       feedbackEl.style.color = "green";
@@ -60,6 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
       feedbackEl.textContent = "Try again!";
       feedbackEl.style.color = "red";
     }
-  }
+  };
 });
 
