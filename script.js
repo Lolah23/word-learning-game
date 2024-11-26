@@ -45,8 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Expose checkAnswer globally for testing
-  window.checkAnswer = function(category) {
+  const checkAnswer = function (category) {
     if (category === selectedCategory) {
       feedbackEl.textContent = "Correct!";
       feedbackEl.style.color = "green";

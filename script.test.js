@@ -1,81 +1,148 @@
-const { JSDOM } = require('jsdom');
-const { TextEncoder, TextDecoder } = require('util');
+const { JSDOM } = require("jsdom");
 
-// Polyfill TextEncoder and TextDecoder for jsdom environment
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+let document;
 
-describe("Game Logic Tests", () => {
-  let dom;
-  let document;
-  let feedbackEl;
-  let startGameBtn;
-  let categorySection;
-  let chooseCategoryBtn;
-  let categories;
-  let gameSection;
-  let questionEl;
-  let choicesEl;
-
-  beforeAll(() => {
-    // Create a new virtual DOM with jsdom
-    dom = new JSDOM(`
-      <div id="startGameBtn"></div>
-      <div id="categorySection" class="hidden"></div>
-      <div id="chooseCategoryBtn"></div>
-      <select id="categories">
-        <option value="animals">Animals</option>
-        <option value="colors">Colors</option>
-      </select>
-      <div id="gameSection" class="hidden"></div>
-      <div id="question"></div>
-      <div id="choices"></div>
-      <div id="feedback"></div>
-    `, { runScripts: "dangerously" });
-    document = dom.window.document;
-
-    // Initialize the element where feedback is shown
-    feedbackEl = document.getElementById("feedback");
-    startGameBtn = document.getElementById("startGameBtn");
-    categorySection = document.getElementById("categorySection");
-    chooseCategoryBtn = document.getElementById("chooseCategoryBtn");
-    categories = document.getElementById("categories");
-    gameSection = document.getElementById("gameSection");
-    questionEl = document.getElementById("question");
-    choicesEl = document.getElementById("choices");
-
-    // Inject the DOM into global object for testing
-    global.document = document;
-    
-    // Simulate the DOMContentLoaded event
-    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
-
-    // Load the game script
-    require('./script.js');  // This will trigger the code in script.js
+beforeAll(async () => {
+  let dom = await JSDOM.fromFile("./index.html", {
+    runScripts: "dangerously",
+    resources: 'usable',
   });
+  document = dom.window.document;
 
-  beforeEach(() => {
-    // Reset any variables if needed before each test
-    feedbackEl.textContent = ''; // Clear the feedback text
-  });
-
-  it('should show "Correct!" when the correct category is chosen', () => {
-    // Simulate selecting a category and calling checkAnswer
-    selectedCategory = 'animals'; // Select category as 'animals'
-    checkAnswer('animals'); // Call checkAnswer function
-
-    // Check that the feedback is "Correct!"
-    expect(feedbackEl.textContent).toBe('Correct!');
-    expect(feedbackEl.style.color).toBe('green');
-  });
-
-  it('should show "Try again!" when the wrong category is chosen', () => {
-    // Simulate selecting a category and calling checkAnswer
-    selectedCategory = 'animals'; // Select category as 'animals'
-    checkAnswer('colors'); // Call checkAnswer with wrong category
-
-    // Check that the feedback is "Try again!"
-    expect(feedbackEl.textContent).toBe('Try again!');
-    expect(feedbackEl.style.color).toBe('red');
+  // Wait for DOMContentLoaded
+  await new Promise((resolve) => {
+    document.addEventListener("DOMContentLoaded", resolve);
   });
 });
+
+describe("Game initial state", () => {
+
+  test("contains only start button when loaded first", () => {
+    const startButton = document.getElementById("startGameBtn");
+    expect(startButton.classList.contains("hidden")).toBe(false);
+
+    const categorySection = document.getElementById("categorySection");
+    expect(categorySection.classList.contains("hidden")).toBe(true);
+
+    const gameSection = document.getElementById("gameSection");
+    expect(gameSection.classList.contains("hidden")).toBe(true);
+  });
+
+  test("proceeds when start button is pressed", () => {
+    const startButton = document.getElementById("startGameBtn");
+    expect(startButton.classList.contains("hidden")).toBe(false);
+
+    startButton.click();
+
+    expect(startButton.classList.contains("hidden")).toBe(true);
+  });
+})
+
+describe("Game setup", () => {
+
+  beforeEach(() => {
+    const startButton = document.getElementById("startGameBtn");
+    startButton.click();
+  });
+
+  test("game is hidden when category is not choosen", () => {
+    const gameSection = document.getElementById("gameSection");
+    expect(gameSection.classList.contains("hidden")).toBe(true);
+  });
+
+  test("contains an desctription next to select box", () => {
+    const categorySection = document.getElementById("categorySection");
+    expect(categorySection.children[0].textContent).toBe("Choose a word category:");
+  });
+
+  test("category select box contains all categories and defaults choise to 'Animals'", () => {
+    const categorySelectBox = document.getElementById("categories");
+
+    expect(categorySelectBox.classList.contains("hidden")).toBe(false);
+    expect(categorySelectBox.children.length).toBe(3);
+    expect(categorySelectBox.children[0].textContent).toBe("Animals");
+    expect(categorySelectBox.children[1].textContent).toBe("Colors");
+    expect(categorySelectBox.children[2].textContent).toBe("Fruits");
+  });
+
+  test("poceeds to the game with correct category selected", () => {
+    const categorySelectBox = document.getElementById("categories");
+    categorySelectBox.selectedIndex = "2"; // choose Fruits as category
+
+    const startLearningButton = document.getElementById("chooseCategoryBtn");
+    startLearningButton.click();
+
+    const question = document.getElementById("question");
+
+    expect(question.textContent).toBe(`Which category does "Apple" belong to?`);
+  });
+})
+
+describe("Game start (Colors category)", () => {
+
+  beforeEach(() => {
+    const startButton = document.getElementById("startGameBtn");
+    startButton.click();
+
+    const categorySelectBox = document.getElementById("categories");
+    categorySelectBox.selectedIndex = "1"; // choose "colors" as category
+
+    const startLearningButton = document.getElementById("chooseCategoryBtn");
+    startLearningButton.click();
+  });
+
+  test(`shows feedback as "correct" and does proceed to next question when correct answer is choosen`, () => {
+    const question = document.getElementById("question");
+    expect(question.textContent).toBe(`Which category does "Red" belong to?`);
+
+    const answers = document.getElementById("choices");
+    const correctAnswer = answers.children[1]; // choose answer as "colors"
+
+    correctAnswer.click();
+
+    const feedback = document.getElementById("feedback");
+    expect(feedback.textContent).toBe("Correct!");
+    expect(feedback.style.color).toBe("green");
+
+    expect(question.textContent).toBe(`Which category does "Blue" belong to?`);
+  });
+
+  test(`shows feedback as "try again" and does not proceed to next question when wrong answer is choosen`, () => {
+    const question = document.getElementById("question");
+    expect(question.textContent).toBe(`Which category does "Red" belong to?`);
+
+    const answers = document.getElementById("choices");
+    const wrongAnswer = answers.children[0]; // choose answer as "animals"
+
+    wrongAnswer.click();
+
+    const feedback = document.getElementById("feedback");
+    expect(feedback.textContent).toBe("Try again!");
+    expect(feedback.style.color).toBe("red");
+
+    expect(question.textContent).toBe(`Which category does "Red" belong to?`);
+  });
+
+  test(`shows feedback as "game complete" when last answer have been given and does not change the question further`, () => {
+    // It's not possible to mock const words = { ... } in script.js so we can't test all answers
+    // Therefore, we need to manually answer all questions to reach the end of the game
+
+    const question = document.getElementById("question");
+    expect(question.textContent).toBe(`Which category does "Red" belong to?`);
+
+    const answers = document.getElementById("choices");
+    const correctAnswer = answers.children[1]; // choose answer as "colors"
+
+    correctAnswer.click();
+    correctAnswer.click();
+    correctAnswer.click();
+    correctAnswer.click();
+    correctAnswer.click();
+
+    const feedback = document.getElementById("feedback");
+    expect(feedback.textContent).toBe("You completed the game!");
+    expect(feedback.style.color).toBe("blue");
+
+    expect(question.textContent).toBe(`Which category does "Purple" belong to?`);
+  });
+})
